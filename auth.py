@@ -8,49 +8,75 @@ import time
 from encrypt.base64 import get_base64
 from encrypt.xencode import get_xencode
 
-init_url = "http://172.16.1.11/"
-url_get_challenge = "http://172.16.1.11/cgi-bin/get_challenge"
-url_srun_portal = "http://172.16.1.11/cgi-bin/srun_portal"
 
-username = "XXXXXXXXXX"
-password = "XXXXX"
+def init_params():
+    global init_url, url_get_challenge, url_srun_portal, ac_id, n, type, enc, os, name, headers, callback
 
-ac_id = "1"
-n = "200"
-type = "1"
-enc = "s" + "run" + "_bx1"
+    # 初始化 url
+    init_url = "http://172.16.1.11"
+    url_get_challenge = init_url + "/cgi-bin/get_challenge"
+    url_srun_portal = init_url + "/cgi-bin/srun_portal"
 
-os = "Windows 10"
-name = "Windows"
+    global username, password
+    username = ""
+    password = ""
 
-headers = {
-    'Accept': 'text/javascript, application/javascript, application/ecmascript, application/x-ecmascript, */*; q=0.01',
-    'Accept-Encoding': 'gzip, deflate',
-    'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-    'Cookie': 'lang=zh-CN',
-    'Dnt': '1',
-    'Host': '172.16.1.11',
-    'Pragma': 'no-cache',
-    'Referer': 'http://172.16.1.11/srun_portal_pc?ac_id=1&theme=basic1',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 '
-                  'Safari/537.36',
-    'X-Requested-With': 'XMLHttpRequest'
-}
+    # 固定参数
+    ac_id = "1"
+    n = "200"
+    type = "1"
+    enc = "srun_bx1"
+    # 当前操作系统 AndroidOS Windows 10 Smartphones/PDAs/Tablets
+    os = "Windows 10"
+    name = "Windows"
+    # 通用请求头
+    headers = {
+        'Accept': 'text/javascript, application/javascript, application/ecmascript, application/x-ecmascript, */*; q=0.01',
+        'Accept-Encoding': 'gzip, deflate',
+        'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Cookie': 'lang=zh-CN',
+        'Dnt': '1',
+        'Host': '172.16.1.11',
+        'Pragma': 'no-cache',
+        'Referer': 'http://172.16.1.11/srun_portal_pc?ac_id=1&theme=basic1',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 '
+                      'Safari/537.36',
+        'X-Requested-With': 'XMLHttpRequest'
+    }
+    # 回调
+    time_stamp = int(time.time())
+    callback = "jQuery112405642667473880212_" + str(time_stamp)
+    print("callback : " + callback)
 
 
+# 获取当前 ip
 def get_local_ip():
     init_res = requests.get(init_url, headers=headers)
     ip = re.search('id="user_ip" value="(.*?)"', init_res.text).group(1)
     return ip
 
 
+# 获取 chkstr
+def get_chkstr():
+    chkstr = token + username
+    chkstr += token + hmd5
+    chkstr += token + ac_id
+    chkstr += token + ip
+    chkstr += token + n
+    chkstr += token + type
+    chkstr += token + i
+    return chkstr
+
+
+# 加密密码
 def hmac_md5(message, key):
     hmac_hash = hmac.new(key.encode(), message.encode(), hashlib.md5)
     return hmac_hash.hexdigest()
 
 
+# 解析 jsonp 得到 json
 def analysis_jsonp(response):
     jsonp_response = response.text
     # 通过正则表达式提取JSON数据
@@ -60,66 +86,95 @@ def analysis_jsonp(response):
     return data
 
 
-# request get_challenge to get token
+# 获取 challenge
 def get_token(params):
     response = requests.get(url_get_challenge, headers=headers, params=params)
+    print(response.text)
     return analysis_jsonp(response)['challenge']
 
 
-# 调用函数获取指定接口的IP地址
-ip = get_local_ip()
-time_stamp = int(time.time())
-callback = "jQuery112405642667473880212_" + str(time_stamp)
+# 判断 ip
+def adjust_ip(ip):
+    first_two_octets = ip.split(".")[0:2]
+    result = ".".join(first_two_octets)
 
-get_challenge_params = {
-    'callback': callback,
-    'username': username,
-    'ip': str(ip),
-    '_': str(int(time.time()))
-}
+    global username, password
+    password = "233113"
 
-token = get_token(get_challenge_params)
+    if result == "10.31":
+        username = "2022116000239"
+    else:
+        username = "15572990220"
 
-info = {
-    "username": username,
-    "password": password,
-    "ip": ip,
-    "acid": ac_id,
-    "enc_ver": enc
-}
-i = "{SRBX1}" + get_base64(get_xencode(json.dumps(info), token))
+    print("当前登录用户：" + username)
 
-hmd5 = hmac_md5(password, token)
 
-chkstr = token + username
-chkstr += token + hmd5
-chkstr += token + ac_id
-chkstr += token + ip
-chkstr += token + n
-chkstr += token + type
-chkstr += token + i
+# 生产签名
+def encrypt_sign():
+    global i, token, hmd5, ip, username
+    ip = get_local_ip()
+    print("当前 ip : " + ip)
+    adjust_ip(ip)
 
-srun_portal_params = {
-    'callback': callback,
-    'action': 'login',
-    'username': username,
-    'password': '{MD5}' + hmd5,
-    'ac_id': ac_id,
-    'ip': ip,
-    'chksum': hashlib.sha1(chkstr.encode()).hexdigest(),
-    'info': i,
-    'n': n,
-    'type': type,
-    'os': os,
-    'name': name,
-    'double_stack': '1',
-    '_': str(int(time.time()))
-}
+    get_challenge_params = {
+        'callback': callback,
+        'username': username,
+        'ip': str(ip),
+        '_': str(int(time.time()))
+    }
 
-srun_portal_response = requests.get(url_srun_portal, headers=headers, params=srun_portal_params)
-srun_portal_response_json = analysis_jsonp(srun_portal_response)
+    token = get_token(get_challenge_params)
+    print("token : " + token)
+    hmd5 = hmac_md5(password, token)
+    print("hmd5 : " + hmd5)
 
-if srun_portal_response_json["error"] == "ok":
-    print("Succeed")
-else:
-    print("Failure : " + str(srun_portal_response_json))
+    info = {
+        "username": username,
+        "password": password,
+        "ip": ip,
+        "acid": ac_id,
+        "enc_ver": enc
+    }
+
+    i = "{SRBX1}" + get_base64(get_xencode(json.dumps(info), token))
+    print("i: " + i)
+
+
+def login():
+    chkstr = get_chkstr()
+    chksum = hashlib.sha1(chkstr.encode()).hexdigest()
+    print("chksum : " + chksum)
+
+    srun_portal_params = {
+        'callback': callback,
+        'action': 'login',
+        'username': username,
+        'password': '{MD5}' + hmd5,
+        'ac_id': ac_id,
+        'ip': ip,
+        'chksum': chksum,
+        'info': i,
+        'n': n,
+        'type': type,
+        'os': os,
+        'name': name,
+        'double_stack': '1',
+        '_': str(int(time.time()))
+    }
+
+    srun_portal_response = requests.get(url_srun_portal, headers=headers, params=srun_portal_params)
+    srun_portal_response_json = analysis_jsonp(srun_portal_response)
+    print("响应数据：" + str(srun_portal_response_json))
+
+    if srun_portal_response_json["error"] == "ok":
+        print("登录成功", end=' ')
+    else:
+        # 获取错误信息
+        print("登录失败", end='')
+        print(srun_portal_response_json['error_msg'])
+
+
+if __name__ == '__main__':
+    init_params()
+    encrypt_sign()
+    login()
