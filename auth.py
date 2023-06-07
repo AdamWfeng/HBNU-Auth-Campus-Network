@@ -100,12 +100,12 @@ def adjust_ip(ip):
     result = ".".join(first_two_octets)
 
     global username, password
-    password = "233113"
+    password = "XXXXX"
 
     if result == "10.31":
-        username = "2022116000239"
+        username = "XXXXXX"
     else:
-        username = "15572990220"
+        username = "XXXXXX"
 
     logging.info("当前登录用户：" + username)
 
