@@ -178,6 +178,7 @@ def login():
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s',
                         level=logging.INFO)
+    print("test")
     init_params()
     encrypt_sign()
     login()
