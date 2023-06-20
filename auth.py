@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import json
+import os
 import re
 import requests
 import time
@@ -11,16 +12,12 @@ from encrypt.xencode import get_xencode
 
 
 def init_params():
-    global init_url, url_get_challenge, url_srun_portal, ac_id, n, type, enc, os, name, headers, callback
+    global init_url, url_get_challenge, url_srun_portal, ac_id, n, type, enc, operate_system, name, headers, callback
 
     # 初始化 url
     init_url = "http://172.16.1.11"
     url_get_challenge = init_url + "/cgi-bin/get_challenge"
     url_srun_portal = init_url + "/cgi-bin/srun_portal"
-
-    global username, password
-    username = ""
-    password = ""
 
     # 固定参数
     ac_id = "1"
@@ -28,7 +25,7 @@ def init_params():
     type = "1"
     enc = "srun_bx1"
     # 当前操作系统 AndroidOS Windows 10 Smartphones/PDAs/Tablets
-    os = "Windows 10"
+    operate_system = "Windows 10"
     name = "Windows"
     # 通用请求头
     headers = {
@@ -46,8 +43,8 @@ def init_params():
                       'Safari/537.36',
         'X-Requested-With': 'XMLHttpRequest'
     }
-    # 回调
     time_stamp = int(time.time())
+    # 回调
     callback = "jQuery112405642667473880212_" + str(time_stamp)
     logging.info("callback : " + callback)
 
@@ -100,12 +97,12 @@ def adjust_ip(ip):
     result = ".".join(first_two_octets)
 
     global username, password
-    password = "XXXXX"
-
     if result == "10.31":
-        username = "XXXXXX"
+        username = os.environ.get('USERNAME_STUDENT_ID')
+        password = os.environ.get('PASSWORD-STUDENT_ID')
     else:
-        username = "XXXXXX"
+        username = os.environ.get('USERNAME-phone')
+        password = os.environ.get('PASSWORD-phone')
 
     logging.info("当前登录用户：" + username)
 
@@ -157,7 +154,7 @@ def login():
         'info': i,
         'n': n,
         'type': type,
-        'os': os,
+        'os': operate_system,
         'name': name,
         'double_stack': '1',
         '_': str(int(time.time()))
@@ -178,7 +175,6 @@ def login():
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s',
                         level=logging.INFO)
-    print("test")
     init_params()
     encrypt_sign()
     login()
