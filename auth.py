@@ -7,6 +7,8 @@ import requests
 import time
 import logging
 
+from dotenv import load_dotenv
+
 from encrypt.base64 import get_base64
 from encrypt.xencode import get_xencode
 
@@ -99,10 +101,10 @@ def adjust_ip(ip):
     global username, password
     if result == "10.31":
         username = os.environ.get('USERNAME_STUDENT_ID')
-        password = os.environ.get('PASSWORD-STUDENT_ID')
+        password = os.environ.get('PASSWORD_STUDENT_ID')
     else:
-        username = os.environ.get('USERNAME-phone')
-        password = os.environ.get('PASSWORD-phone')
+        username = os.environ.get('USERNAME_PHONE')
+        password = os.environ.get('PASSWORD_PHONE')
 
     logging.info("当前登录用户：" + username)
 
@@ -175,6 +177,7 @@ def login():
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)s - %(pathname)s[line:%(lineno)d] - %(levelname)s: %(message)s',
                         level=logging.INFO)
+    load_dotenv()
     init_params()
     encrypt_sign()
     login()
